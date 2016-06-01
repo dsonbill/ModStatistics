@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
+using KSP.UI;
 
 namespace ModStatistics
 {
@@ -53,7 +54,7 @@ namespace ModStatistics
 
             if (node == null)
             {
-                promptUpdatePref();
+                promptPref();
             }
             else
             {
@@ -82,7 +83,7 @@ namespace ModStatistics
                 }
                 else
                 {
-                    promptUpdatePref();
+                    promptPref();
                 }
             }
 
@@ -98,20 +99,77 @@ namespace ModStatistics
             install();
         }
 
-        private void promptUpdatePref()
+        protected void promptPref()
         {
+            //Enabled
             PopupDialog.SpawnPopupDialog(
                 new MultiOptionDialog(
-                    "You recently installed a mod which uses ModStatistics to report anonymous usage information. Would you like ModStatistics to automatically update when new versions are available?",
-                    new Callback(() => { update = GUILayout.Toggle(update, "Automatically install ModStatistics updates"); }),
-                    "ModStatistics",
-                    HighLogic.Skin,
-                    new DialogOption("OK", () => { writeConfig(); checkUpdates(); }, true),
-                    new DialogOption("Launch Website", () => { Application.OpenURL(@"http://stats.majiir.net/"); }, false)
+                    @"Ok, here's the deal:
+
+One way or another, if intentional or not, ModStatistics has been installed into
+your KSP GameData folder. ModStatistics is a very useful program for mod authors.
+ModStatistics is not built to help indentify you - in fact, with censorship to the
+output log, there's no identifiable information at all. At the end of the day,
+ModStatistics is built to benefit your gameplay, and give you an all around
+better KSP modding experience.
+
+By choosing 'AGREE' below, you agree to allow <SERVER> to collect - periodically, 
+over the internet, and completely anonymously:
+
+Mod Usage and Installation, Errors, Exceptions, Crashes, KSP Version, Log File
+(WITH CENSORED DIRECTORY), and your Program ID.
+
+Your program ID is not traceable back to you, and is only used to identify individual
+instances of KSP - this is so we can tell which reports are from the same game
+installation. While this does mean we build information on your specific installation,
+it also means we can identify problems from installation and uninstallation, as well
+as find out what mods people are using together, identify errors from using mods
+together, possible reasons for uninstallation, KSP version incompatibility, and much
+more. This is all made to ultimately benefit you.
+
+Some of this information can be turned off independently by the upcoming questions
+in addition to config files, and some only by disabling ModStatistics completely,
+either by config file or by choosing 'DISAGREE' below.
+
+If you have agreed, the above information will be generated into a report at the
+closing or crashing of KSP and sent to < SERVER > the next time KSP is opened.",
+                    "ModStatistics - End-User License Agreement",
+                    HighLogic.UISkin,
+                    new DialogGUIButton("AGREE", () => { enabledChoice(true); writeConfig(); }, true),
+                    new DialogGUIButton("DISAGREE", () => { enabledChoice(false); updateChoice(false); writeConfig(); }, true)
                     ),
                 true,
-                HighLogic.Skin
+                HighLogic.UISkin
             );
+
+            if (!enabled)
+            {
+                return;
+            }
+
+            PopupDialog.SpawnPopupDialog(
+                new MultiOptionDialog(
+                    @"Would you like ModStatistics to automatically update when new versions are available?
+This makes sure your version is set to the correct one, and ensures that mod authors get the most relavant information
+possible. Please consider accepting. Updates will be automatically downloaded from: < SERVER >",
+                    "ModStatistics - Automatic Updates",
+                    HighLogic.UISkin,
+                    new DialogGUIButton("Allow Updates", () => { updateChoice(true); writeConfig(); checkUpdates(); }, true),
+                    new DialogGUIButton("Do Not Allow Updates", () => { updateChoice(false); writeConfig(); }, true)
+                    ),
+                true,
+                HighLogic.UISkin
+            );
+        }
+
+        protected void updateChoice(bool choice)
+        {
+            update = choice;
+        }
+
+        protected void enabledChoice(bool choice)
+        {
+            disabled = !choice;
         }
 
         private void writeConfig()
@@ -361,7 +419,7 @@ namespace ModStatistics
                                           revision = fileVersion.Revision,
                                           build = fileVersion.Build,
                                       },
-                                      informationalVersion = getInformationalVersion(assembly.assembly),
+                                      informationalVersion = getInformationalVersion(assembly.assembly)
                                   }).ToArray();
             }
 
@@ -392,7 +450,7 @@ namespace ModStatistics
                     gpuVendorId = SystemInfo.graphicsDeviceVendorID,
                     systemMemory = SystemInfo.systemMemorySize,
                 },
-                assemblies = assembliesInfo,
+                assemblies = assembliesInfo
             };
 
             return new JsonWriter().Write(report);
