@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModStatistics", "ModStatistics.csproj", "{67BCC59A-CC92-4F04-A3B1-55C2BFA9602D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModStatistics", "Src/ModStatistics.csproj", "{67BCC59A-CC92-4F04-A3B1-55C2BFA9602D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

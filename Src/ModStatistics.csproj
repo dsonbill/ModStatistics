@@ -32,19 +32,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>.\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="JsonFx">
-      <HintPath>.\JsonFx.dll</HintPath>
+      <HintPath>..\JsonFx.dll</HintPath>
     </Reference>
     <Reference Include="KSPUtil">
-      <HintPath>.\KSPUtil.dll</HintPath>
+      <HintPath>..\KSPUtil.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
-      <HintPath>.\UnityEngine.dll</HintPath>
+      <HintPath>..\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
