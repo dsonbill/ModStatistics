@@ -7,6 +7,7 @@ using System.Net;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Diagnostics;
 using UnityEngine;
 using KSP.UI;
 
@@ -16,7 +17,7 @@ namespace ModStatistics
     internal class ModStatistics : MonoBehaviour
     {
         // The implementation with the highest version number will be allowed to run.
-        private const int version = 7;
+        private const int version = 8;
         private static int _version = version;
 
         private static readonly string folder;
@@ -42,7 +43,9 @@ namespace ModStatistics
             // Let the latest version execute.
             if (version != highest) { return; }
 
-            Debug.Log(String.Format("[ModStatistics] Running version {0}", _version));
+            UnityEngine.Debug.Log(String.Format("[ModStatistics] Running version {0}", _version));
+
+            //Works! Process.Start("python.exe");
 
             // Other checkers will see this version and not run.
             // This accomplishes the same as an explicit "ran" flag with fewer moving parts.
@@ -61,7 +64,7 @@ namespace ModStatistics
                 var disabledString = node.GetValue("disabled");
                 if (disabledString != null && bool.TryParse(disabledString, out disabled) && disabled)
                 {
-                    Debug.Log("[ModStatistics] Disabled in configuration file");
+                    UnityEngine.Debug.Log("[ModStatistics] Disabled in configuration file");
                     return;
                 }
 
@@ -72,14 +75,14 @@ namespace ModStatistics
                 }
                 catch
                 {
-                    Debug.LogWarning("[ModStatistics] Could not parse ID");
+                    UnityEngine.Debug.LogWarning("[ModStatistics] Could not parse ID");
                 }
 
                 var str = node.GetValue("update");
                 if (str != null && bool.TryParse(str, out update))
                 {
                     writeConfig();
-                    checkUpdates();
+                    //checkUpdates();
                 }
                 else
                 {
@@ -154,7 +157,7 @@ This makes sure your version is set to the correct one, and ensures that mod aut
 possible. Please consider accepting. Updates will be automatically downloaded from: < SERVER >",
                     "ModStatistics - Automatic Updates",
                     HighLogic.UISkin,
-                    new DialogGUIButton("Allow Updates", () => { updateChoice(true); writeConfig(); checkUpdates(); }, true),
+                    new DialogGUIButton("Allow Updates", () => { updateChoice(true); writeConfig(); }, true), // checkUpdates(); }, true),
                     new DialogGUIButton("Do Not Allow Updates", () => { updateChoice(false); writeConfig(); }, true)
                     ),
                 true,
@@ -233,7 +236,7 @@ possible. Please consider accepting. Updates will be automatically downloaded fr
         {
             if (!running) { return; }
 
-            Debug.Log("[ModStatistics] Saving report");
+            UnityEngine.Debug.Log("[ModStatistics] Saving report");
             File.WriteAllText(createReportPath(), prepareReport(false));
 
             File.Delete(folder + "checkpoint.json");
@@ -253,7 +256,15 @@ possible. Please consider accepting. Updates will be automatically downloaded fr
 
         private void sendReports()
         {
-            var files = Directory.GetFiles(folder, "report-*.json");
+            List<string> files = Directory.GetFiles(folder, "report-*.json").ToList<string>();
+            for (int i = 0; i < files.Count; i++)
+            {
+                sendFile(files, i);
+            }
+        }
+
+        protected void sendFile(List<string> files, int index)
+        {
             using (var client = new WebClient())
             {
                 setUserAgent(client);
@@ -264,29 +275,26 @@ possible. Please consider accepting. Updates will be automatically downloaded fr
                     var file = (string)e.UserState;
                     if (e.Cancelled)
                     {
-                        Debug.LogWarning(String.Format("[ModStatistics] Upload operation for {0} was cancelled", Path.GetFileName(file)));
+                        UnityEngine.Debug.LogWarning(String.Format("[ModStatistics] Upload operation for {0} was cancelled", Path.GetFileName(file)));
                     }
                     else if (e.Error != null)
                     {
-                        Debug.LogError(String.Format("[ModStatistics] Could not upload {0}:\n{1}", Path.GetFileName(file), e.Error));
+                        UnityEngine.Debug.LogError(String.Format("[ModStatistics] Could not upload {0}:\n{1}", Path.GetFileName(file), e.Error));
                     }
                     else
                     {
-                        Debug.Log("[ModStatistics] " + Path.GetFileName(file) + " sent successfully");
+                        UnityEngine.Debug.Log("[ModStatistics] " + Path.GetFileName(file) + " sent successfully");
                         File.Delete(file);
                     }
                 };
 
-                foreach (var file in files)
+                try
                 {
-                    try
-                    {
-                        client.UploadStringAsync(new Uri(@"http://stats.majiir.net/submit_report"), null, File.ReadAllText(file), file);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogWarning(String.Format("[ModStatistics] Error initiating {0) upload:\n{1}", Path.GetFileName(file), e));
-                    }
+                    client.UploadStringAsync(new Uri(@"http://localhost:5000/statistics/report"), null, File.ReadAllText(files[index]), files[index]);
+                }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.LogWarning(String.Format("[ModStatistics] Error initiating {0) upload:\n{1}", Path.GetFileName(files[index]), e));
                 }
             }
         }
@@ -312,11 +320,11 @@ possible. Please consider accepting. Updates will be automatically downloaded fr
                 {
                     if (e.Cancelled)
                     {
-                        Debug.LogWarning(String.Format("[ModStatistics] Update query operation was cancelled"));
+                        UnityEngine.Debug.LogWarning(String.Format("[ModStatistics] Update query operation was cancelled"));
                     }
                     else if (e.Error != null)
                     {
-                        Debug.LogError(String.Format("[ModStatistics] Could not query for updates:\n{0}", e.Error));
+                        UnityEngine.Debug.LogError(String.Format("[ModStatistics] Could not query for updates:\n{0}", e.Error));
                     }
                     else
                     {
@@ -333,7 +341,7 @@ possible. Please consider accepting. Updates will be automatically downloaded fr
                         }
                         catch (Exception ex)
                         {
-                            Debug.LogError(String.Format("[ModStatistics] Error parsing update manifest:\n{0}", ex));
+                            UnityEngine.Debug.LogError(String.Format("[ModStatistics] Error parsing update manifest:\n{0}", ex));
                         }
                     }
                 };
@@ -343,15 +351,15 @@ possible. Please consider accepting. Updates will be automatically downloaded fr
                     var entry = e.UserState as ManifestEntry;
                     if (e.Cancelled)
                     {
-                        Debug.LogWarning(String.Format("[ModStatistics] Update download operation was cancelled"));
+                        UnityEngine.Debug.LogWarning(String.Format("[ModStatistics] Update download operation was cancelled"));
                     }
                     else if (e.Error != null)
                     {
-                        Debug.LogError(String.Format("[ModStatistics] Could not download update for {0}:\n{1}", entry.path, e.Error));
+                        UnityEngine.Debug.LogError(String.Format("[ModStatistics] Could not download update for {0}:\n{1}", entry.path, e.Error));
                     }
                     else
                     {
-                        Debug.Log("[ModStatistics] Successfully updated " + entry.path);
+                        UnityEngine.Debug.Log("[ModStatistics] Successfully updated " + entry.path);
                     }
                 };
 
@@ -477,7 +485,7 @@ possible. Please consider accepting. Updates will be automatically downloaded fr
                 if (!warnedAssemblies.Contains(name))
                 {
                     warnedAssemblies.Add(name);
-                    Debug.LogError(String.Format("[ModStatistics] Error while inspecting assembly {0}. This probably means that {0} is targeting a runtime other than .NET 3.5. Please notify the author of {0} of this error.\n\n{1}", name, e));
+                    UnityEngine.Debug.LogError(String.Format("[ModStatistics] Error while inspecting assembly {0}. This probably means that {0} is targeting a runtime other than .NET 3.5. Please notify the author of {0} of this error.\n\n{1}", name, e));
                 }
                 return null;
             }

@@ -4,6 +4,10 @@
 # DLL files - don't want to upload something copyrighted now!
 *.dll
 
+# Pycache
+Server/modstats/__pycache__
+Server/__pycache__
+
 # User-specific files
 *.suo
 *.user
